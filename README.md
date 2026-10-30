@@ -21,7 +21,7 @@ Ikuti berurutan:
 | Panduan | Isi |
 | --- | --- |
 | [0. Siapkan aplikasimu sendiri](docs/0-siapkan-aplikasi.md) | Hanya jika memakai aplikasimu sendiri: salin file deploy dan cek kode. Lewati untuk aplikasi demo. |
-| [1. Beli domain](docs/1-beli-domain.md) | Beli domain di Rumah Web, arahkan `api` ke VPS. |
+| [1. Beli VPS dan domain](docs/1-beli-vps-dan-domain.md) | Beli VPS dan domain di Rumah Web, arahkan `api` ke VPS. |
 | [2. Deploy backend ke VPS](docs/2-deploy-backend-vps.md) | Amankan server, pasang Docker, jalankan backend dengan HTTPS, backup harian. |
 | [3. Deploy frontend ke Vercel](docs/3-deploy-frontend-vercel.md) | Import ke Vercel, pasang domain. |
 | [4. Setelah deploy](docs/4-setelah-deploy.md) | Deploy ulang, restore backup, monitoring, perawatan. |

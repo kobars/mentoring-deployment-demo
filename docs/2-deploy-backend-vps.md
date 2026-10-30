@@ -15,9 +15,8 @@ Internet ──► caddy (HTTPS, port 80/443) ──► app (Express, port 3000)
 
 **Yang dibutuhkan:**
 
-- Record `api.domainkamu.com` sudah mengarah ke IP VPS ([panduan 1](1-beli-domain.md)).
-- VPS Rumah Web, OS **Ubuntu 24.04**, paket **M (2 GB RAM)** atau lebih. IP dan password root
-  ada di email aktivasi.
+- VPS sudah aktif, dan record `api.domainkamu.com` sudah mengarah ke IP VPS
+  ([panduan 1](1-beli-vps-dan-domain.md)). IP dan password root ada di email aktivasi.
 - Repo GitHub berisi backend (dan [panduan 0](0-siapkan-aplikasi.md) sudah selesai, jika
   memakai aplikasimu sendiri).
 
@@ -214,6 +213,8 @@ Backend siap. Lanjut ke [3. Deploy frontend ke Vercel](3-deploy-frontend-vercel.
 Untuk deploy ulang, restore backup, dan perawatan: [4. Setelah deploy](4-setelah-deploy.md).
 
 ## Belum punya domain? (hanya untuk latihan)
+
+Kamu tetap butuh VPS ([panduan 1](1-beli-vps-dan-domain.md), langkah 1).
 
 Di `Caddyfile`, ganti baris `api.domainkamu.com {` dengan `:80 {`. Backend bisa dibuka di
 `http://IP_VPS`. **Jangan pakai untuk aplikasi sungguhan:** tanpa HTTPS, password dan token

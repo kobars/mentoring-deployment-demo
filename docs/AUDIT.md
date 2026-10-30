@@ -119,7 +119,7 @@ VPS, termasuk password dan token login, dikirim tanpa enkripsi.
 
 **Perbaikan.** Domain sendiri (`api.domainkamu.com`) dan **Caddy**. Caddy meminta sertifikat
 HTTPS gratis dari Let's Encrypt, memperpanjangnya sendiri, dan mengalihkan `http://` ke
-`https://`. Lihat `docs/1-beli-domain.md` dan `Caddyfile`.
+`https://`. Lihat `docs/1-beli-vps-dan-domain.md` dan `Caddyfile`.
 
 ## 16. Tidak ada backup database
 

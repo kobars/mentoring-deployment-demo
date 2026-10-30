@@ -1,7 +1,11 @@
-# 1. Beli domain di Rumah Web
+# 1. Beli VPS dan domain di Rumah Web
+
+**VPS** adalah server Linux milik kita sendiri. Backend dan database berjalan di sini.
 
 **Domain** adalah nama alamat website, misalnya `tokokamu.com`. Kita butuh domain agar backend
 bisa memakai **HTTPS** (koneksi terenkripsi).
+
+Beli VPS lebih dulu, karena domain harus diarahkan ke IP VPS.
 
 **DNS** adalah "buku alamat" internet. Isinya disebut **record**:
 
@@ -17,7 +21,23 @@ Rencana alamat (ganti `domainkamu.com` dengan domain kamu):
 | `api.domainkamu.com` | Backend | IP VPS | Panduan ini |
 | `domainkamu.com` dan `www` | Frontend | Vercel | [Panduan 3](3-deploy-frontend-vercel.md) |
 
-## 1. Pilih domain
+## 1. Beli VPS
+
+Harga di Rumah Web, Oktober 2026 (cek lagi sebelum membeli):
+
+| Paket | RAM | Harga per bulan | Keterangan |
+| --- | --- | --- | --- |
+| XS | 512 MB | Rp 50.000 | Tidak cukup. |
+| S | 1 GB | Rp 60.000 | Pas-pasan, bisa kehabisan memori. |
+| **M** | **2 GB** | **Rp 120.000** | **Disarankan.** |
+
+1. Buka https://www.rumahweb.com/vps-murah/.
+2. Pilih paket **M** atau lebih besar. Saat diminta memilih OS, pilih **Ubuntu 24.04**.
+3. Login atau buat akun Rumah Web, lalu bayar.
+
+**Cek:** kamu menerima email aktivasi berisi **IP VPS** dan **password root**. Simpan email ini.
+
+## 2. Pilih domain
 
 Harga di Rumah Web, Oktober 2026 (cek lagi sebelum membeli):
 
@@ -29,7 +49,7 @@ Harga di Rumah Web, Oktober 2026 (cek lagi sebelum membeli):
 
 Lihat **harga perpanjangan**, bukan hanya tahun pertama. Pilih nama yang pendek dan mudah dieja.
 
-## 2. Beli
+## 3. Beli domain
 
 1. Buka https://www.rumahweb.com → halaman **Domain**.
 2. Cari nama domain, pilih yang tersedia, lalu checkout. **Tidak perlu membeli hosting.**
@@ -45,14 +65,14 @@ Setelah membeli:
 - Pasang pengingat di kalender sebulan sebelum domain kedaluwarsa. Domain yang terlambat
   diperpanjang membuat website mati, dan menebusnya mahal.
 
-## 3. Buka DNS Management
+## 4. Buka DNS Management
 
 1. Login ke **Clientzone** Rumah Web.
 2. **Domain** → **Manage** pada domain kamu → **DNS Management**.
 3. Jika muncul tombol **Daftar**, **Aktifkan**, atau **Ubah Nameserver**, klik sampai tidak ada
    lagi tombol update.
 
-## 4. Arahkan `api` ke IP VPS
+## 5. Arahkan `api` ke IP VPS
 
 Klik **Add New Record**, lalu isi:
 
@@ -60,7 +80,7 @@ Klik **Add New Record**, lalu isi:
 | --- | --- |
 | Nama / Host | `api` |
 | Type | `A` |
-| Record / Value | IP VPS kamu, misalnya `103.150.10.20` |
+| Record / Value | IP VPS dari email aktivasi, misalnya `103.150.10.20` |
 | TTL | Biarkan default |
 
 **Cek** dari terminal laptop (biasanya beberapa menit, paling lama sekitar 24 jam):

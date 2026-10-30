@@ -134,4 +134,4 @@ error sertifikat untuk domain contoh. Itu normal di laptop.
 
 Hentikan dengan `docker compose down`. Commit dan push semua file, kecuali `.env`.
 
-Lanjut ke [1. Beli domain](1-beli-domain.md).
+Lanjut ke [1. Beli VPS dan domain](1-beli-vps-dan-domain.md).
