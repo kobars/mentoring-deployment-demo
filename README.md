@@ -26,9 +26,9 @@ harian, dan monitoring.
 
 Apa saja yang diperbaiki dari versi kelas (Day 48) dan alasannya: [docs/AUDIT.md](docs/AUDIT.md).
 
-## Pakai untuk app kamu sendiri
+## Deploy aplikasi milikmu sendiri
 
-Panduan deploy bisa dipakai untuk app **Express + MySQL** dan **React** milik kamu sendiri.
+Panduan deploy bisa dipakai untuk aplikasi **Express + MySQL** dan **React** milikmu sendiri.
 Salin file berikut, lalu ikuti langkah 0 di setiap panduan:
 
 | File | Panduan |
