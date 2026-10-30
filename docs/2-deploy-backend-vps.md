@@ -34,7 +34,7 @@ adalah tempat perintah itu berjalan:
 
 ## 1. Isi domain di `Caddyfile` (di laptop)
 
-Ganti `api.domainkamu.com` dengan subdomain API kamu. Commit dan push.
+Di `Caddyfile`, ganti `api.kobarmentoring.my.id` dengan subdomain API kamu. Commit dan push.
 
 ## 2. Login dan buat user `deploy`
 
@@ -280,7 +280,7 @@ Untuk deploy ulang, restore backup, dan perawatan: [4. Setelah deploy](4-setelah
 
 Kamu tetap butuh VPS ([panduan 1](1-beli-vps-dan-domain.md), langkah 1).
 
-Di `Caddyfile`, ganti baris `api.domainkamu.com {` dengan `:80 {`. Backend bisa dibuka di
+Di `Caddyfile`, ganti baris `api.kobarmentoring.my.id {` dengan `:80 {`. Backend bisa dibuka di
 `http://IP_VPS`. **Jangan pakai untuk aplikasi sungguhan:** tanpa HTTPS, password dan token
 login bisa dibaca orang lain di jaringan. Pakai data palsu.
 

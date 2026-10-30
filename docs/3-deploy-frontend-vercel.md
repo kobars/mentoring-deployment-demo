@@ -9,7 +9,7 @@ lain, tetapi browser tetap melihat alamat Vercel):
 ```json
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://api.domainkamu.com/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://api.kobarmentoring.my.id/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
@@ -27,7 +27,7 @@ Aturan `/api` harus di atas.
 
 ## 1. Isi domain API di `vercel.json` (di laptop)
 
-Ganti `api.domainkamu.com` dengan subdomain API kamu. Commit dan push.
+Di `vercel.json`, ganti `api.kobarmentoring.my.id` dengan subdomain API kamu. Commit dan push.
 
 ## 2. Import project ke Vercel
 

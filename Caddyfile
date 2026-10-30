@@ -17,7 +17,7 @@
 
 # SESUAIKAN: subdomain API kamu. A record-nya harus sudah mengarah ke IP VPS.
 # Belum punya domain (hanya untuk latihan)? Ganti baris ini dengan  :80 {
-api.domainkamu.com {
+api.kobarmentoring.my.id {
 	import backend
 }
 
