@@ -40,8 +40,8 @@ Harga di Rumah Web, Oktober 2026 (cek lagi sebelum membeli):
 Setelah VPS aktif, ambil data login VPS:
 
 1. Login ke **Clientzone** Rumah Web.
-2. **VPS** → **Manage** pada VPS kamu.
-3. Buka bagian **Account Information**. Jika belum terlihat, klik **Manage VPS** dulu.
+2. **VPS** → **Kelola** pada VPS kamu.
+3. Buka bagian **Account Information**. Jika belum terlihat, klik **Kelola VPS** dulu.
 
 **Cek:** kamu sudah mencatat **IP VPS** dan **password root**. Username-nya `root`. Jangan bagikan
 password ini.
@@ -77,7 +77,7 @@ Setelah membeli:
 ## 4. Buka DNS Management
 
 1. Login ke **Clientzone** Rumah Web.
-2. **Domain** → **Manage** pada domain kamu → **DNS Management**.
+2. **Domain** → **Kelola** pada domain kamu → **DNS Management**.
 3. Jika muncul tombol **Daftar**, **Aktifkan**, atau **Ubah Nameserver**, klik sampai tidak ada
    lagi tombol update.
 
