@@ -32,6 +32,11 @@ adalah tempat perintah itu berjalan:
 | **Terminal laptop** | Belum login dengan `ssh`, atau sudah keluar dengan `exit`. | Baris terminal seperti biasa. |
 | **Terminal VPS** | Sudah login dengan `ssh`. Perintah berjalan di VPS, bukan di laptop. | Baris terminal diawali `root@` atau `deploy@`. |
 
+**Tempel satu blok perintah setiap kali, lalu tunggu sampai selesai.** Jangan menggabungkan beberapa
+blok. Perintah `sudo` dan perintah yang meminta jawaban bisa menghapus baris tempelan sesudahnya,
+tanpa pesan error. Karena itu, blok di panduan ini memakai `&&` (jalankan perintah berikutnya jika
+perintah sebelumnya berhasil), dan `\` di akhir baris berarti perintahnya berlanjut ke baris berikut.
+
 ## 1. Isi domain di `Caddyfile` (di laptop)
 
 Di `Caddyfile`, ganti `api.kobarmentoring.my.id` dengan subdomain API kamu. Commit dan push.
@@ -53,13 +58,27 @@ ssh root@IP_VPS
 Di **terminal VPS** itu, jalankan:
 
 ```bash
-apt update && apt upgrade -y
-timedatectl set-timezone Asia/Jakarta
-adduser deploy
-usermod -aG sudo deploy
+apt update && apt upgrade -y && timedatectl set-timezone Asia/Jakarta
 ```
 
-`adduser` meminta password untuk user `deploy`. Catat password ini; `sudo` memintanya.
+Buat user `deploy`:
+
+```bash
+adduser deploy
+```
+
+`adduser` meminta password untuk user `deploy`. Ini password baru, bukan password root. Catat
+password ini: `ssh-copy-id` dan `sudo` memintanya. Untuk pertanyaan `Full Name` dan seterusnya, tekan
+`Enter`, lalu ketik `y`.
+
+Beri user `deploy` akses `sudo` (izin menjalankan perintah admin), lalu cek hasilnya:
+
+```bash
+usermod -aG sudo deploy
+id deploy
+```
+
+**Cek:** hasil `id deploy` memuat `sudo`.
 
 ## 3. Login dengan SSH key
 
@@ -126,15 +145,13 @@ menemukannya tanpa `-i`. **Mulai sekarang, selalu login dengan perintah ini.**
 diminta adalah passphrase itu. Baris terminal diawali `deploy@`.
 
 Sekarang matikan login root dan login password. Jalankan ini di **terminal VPS** yang baru saja
-login sebagai `deploy`, dan **jangan tutup** terminal itu sampai pengecekan di bawah berhasil:
+login sebagai `deploy`, dan **jangan tutup** terminal itu sampai pengecekan di bawah berhasil.
+Jika diminta, masukkan password user `deploy`:
 
 ```bash
-sudo tee /etc/ssh/sshd_config.d/00-hardening.conf > /dev/null <<'EOF'
-PermitRootLogin no
-PasswordAuthentication no
-KbdInteractiveAuthentication no
-EOF
-sudo sshd -t && sudo systemctl restart ssh
+printf 'PermitRootLogin no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\n' | sudo tee /etc/ssh/sshd_config.d/00-hardening.conf > /dev/null && \
+sudo sshd -t && \
+sudo systemctl restart ssh && \
 sudo sshd -T | grep -Ei '^(permitrootlogin|passwordauthentication)'
 ```
 
@@ -146,26 +163,38 @@ laptop: `ssh -i ~/.ssh/NAMA_KEY deploy@IP_VPS` masih bisa masuk.
 Langkah 4 sampai 9 dijalankan di **terminal VPS**, sebagai `deploy`. Baris terminal diawali
 `deploy@`.
 
+**UFW** (firewall) hanya membuka SSH, HTTP, dan HTTPS. Jika diminta, masukkan password `deploy`:
+
 ```bash
-sudo ufw allow OpenSSH
-sudo ufw allow 80
-sudo ufw allow 443
+sudo ufw allow OpenSSH && sudo ufw allow 80 && sudo ufw allow 443
+```
+
+```bash
 sudo ufw enable
+```
+
+Ketik `y` saat muncul `Proceed with operation (y|n)?`.
+
+`unattended-upgrades` memasang update keamanan setiap hari:
+
+```bash
 sudo apt install -y unattended-upgrades
+```
+
+```bash
 sudo dpkg-reconfigure -plow unattended-upgrades
 ```
 
-- **UFW** (firewall) hanya membuka SSH, HTTP, dan HTTPS.
-- `unattended-upgrades` memasang update keamanan setiap hari. Pilih **Yes** saat ditanya.
+Pilih **Yes** saat ditanya.
 
 **Swap** adalah disk yang dipakai sebagai memori cadangan, agar build tidak gagal saat RAM habis.
 Jalankan `free -h`. Jika baris `Swap` bernilai `0B`:
 
 ```bash
-sudo fallocate -l 2G /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
+sudo fallocate -l 2G /swapfile && \
+sudo chmod 600 /swapfile && \
+sudo mkswap /swapfile && \
+sudo swapon /swapfile && \
 echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 ```
 
@@ -174,9 +203,7 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 ## 5. Pasang Docker
 
 ```bash
-curl -fsSL https://get.docker.com | sudo sh
-sudo usermod -aG docker deploy
-exit
+curl -fsSL https://get.docker.com | sudo sh && sudo usermod -aG docker deploy && exit
 ```
 
 `exit` membawamu kembali ke terminal laptop. Login lagi dengan
@@ -191,9 +218,9 @@ docker run --rm hello-world
 ## 6. Ambil kode
 
 ```bash
-sudo mkdir -p /var/www && sudo chown deploy:deploy /var/www
-cd /var/www
-git clone https://github.com/kobars/mentoring-deployment-demo.git app
+sudo mkdir -p /var/www && sudo chown deploy:deploy /var/www && \
+cd /var/www && \
+git clone https://github.com/kobars/mentoring-deployment-demo.git app && \
 cd app
 ```
 
