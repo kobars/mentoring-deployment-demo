@@ -1,0 +1,237 @@
+# 2. Deploy backend ke VPS Rumah Web
+
+**VPS** adalah server Linux milik kita sendiri. Di VPS kita hanya memasang **Docker**. Docker
+menjalankan tiga **container** (aplikasi yang terisolasi), yang diatur oleh `docker-compose.yml`:
+
+```text
+Internet ──► caddy (HTTPS, port 80/443) ──► app (Express, port 3000) ──► db (MySQL)
+```
+
+- `caddy` menerima request dari internet. Caddy memasang dan memperpanjang sertifikat HTTPS
+  secara otomatis.
+- `app` adalah backend, dibuat dari `backend/Dockerfile`.
+- `db` adalah MySQL. Datanya disimpan di volume Docker, jadi tidak hilang saat container
+  dibuat ulang. Hanya `caddy` yang bisa diakses dari internet.
+
+**Yang dibutuhkan:**
+
+- Record `api.domainkamu.com` sudah mengarah ke IP VPS ([panduan 1](1-beli-domain.md)).
+- VPS Rumah Web, OS **Ubuntu 24.04**, paket **M (2 GB RAM)** atau lebih. IP dan password root
+  ada di email aktivasi.
+- Repo GitHub berisi backend (dan [panduan 0](0-siapkan-aplikasi.md) sudah selesai, jika
+  memakai aplikasimu sendiri).
+
+Ganti `IP_VPS` dan `domainkamu.com` di semua perintah dengan milikmu.
+
+## 1. Isi domain di `Caddyfile` (di laptop)
+
+Ganti `api.domainkamu.com` dengan subdomain API kamu. Commit dan push.
+
+## 2. Login dan buat user `deploy`
+
+Dari terminal laptop:
+
+```bash
+ssh root@IP_VPS
+```
+
+Di VPS:
+
+```bash
+apt update && apt upgrade -y
+timedatectl set-timezone Asia/Jakarta
+adduser deploy
+usermod -aG sudo deploy
+```
+
+`adduser` meminta password untuk user `deploy`. Catat password ini; `sudo` memintanya.
+
+## 3. Login dengan SSH key
+
+**SSH key** adalah pasangan kunci. Kunci privat tetap di laptop, kunci publik disimpan di VPS.
+Key tidak bisa ditebak seperti password.
+
+Di terminal **laptop**. Lewati `ssh-keygen` jika kamu sudah punya key:
+
+```bash
+ssh-keygen -t ed25519
+ssh-copy-id deploy@IP_VPS
+```
+
+Di Windows (PowerShell), ganti `ssh-copy-id` dengan:
+
+```powershell
+type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh deploy@IP_VPS "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+```
+
+**Cek:** `ssh deploy@IP_VPS` masuk tanpa meminta password VPS.
+
+Sekarang matikan login root dan login password. Lakukan ini dari sesi `deploy`, dan **jangan
+tutup** sesi itu sampai pengecekan di bawah berhasil:
+
+```bash
+sudo tee /etc/ssh/sshd_config.d/00-hardening.conf > /dev/null <<'EOF'
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+EOF
+sudo sshd -t && sudo systemctl restart ssh
+sudo sshd -T | grep -Ei '^(permitrootlogin|passwordauthentication)'
+```
+
+**Cek:** hasilnya `permitrootlogin no` dan `passwordauthentication no`. Lalu buka terminal baru:
+`ssh deploy@IP_VPS` masih bisa masuk.
+
+## 4. Firewall, update otomatis, dan swap
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw enable
+sudo apt install -y unattended-upgrades
+sudo dpkg-reconfigure -plow unattended-upgrades
+```
+
+- **UFW** (firewall) hanya membuka SSH, HTTP, dan HTTPS.
+- `unattended-upgrades` memasang update keamanan setiap hari. Pilih **Yes** saat ditanya.
+
+**Swap** adalah disk yang dipakai sebagai memori cadangan, agar build tidak gagal saat RAM habis.
+Jalankan `free -h`. Jika baris `Swap` bernilai `0B`:
+
+```bash
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+```
+
+**Cek:** `sudo ufw status` memuat 22, 80, dan 443. `free -h` menampilkan swap 2 GB.
+
+## 5. Pasang Docker
+
+```bash
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker deploy
+exit
+```
+
+Login lagi (`ssh deploy@IP_VPS`), lalu:
+
+```bash
+docker run --rm hello-world
+```
+
+**Cek:** muncul `Hello from Docker!`.
+
+## 6. Ambil kode
+
+```bash
+sudo mkdir -p /var/www && sudo chown deploy:deploy /var/www
+cd /var/www
+git clone https://github.com/kobars/mentoring-deployment-demo.git app
+cd app
+```
+
+Ganti URL dengan repo kamu.
+
+**Repo private?** Buat deploy key (kunci khusus VPS yang hanya bisa membaca repo ini):
+
+```bash
+ssh-keygen -t ed25519 -C "vps-deploy" -f ~/.ssh/id_ed25519 -N ""
+cat ~/.ssh/id_ed25519.pub
+```
+
+Tempel hasilnya di GitHub: repo → **Settings** → **Deploy keys** → **Add deploy key** (jangan
+centang write access). Lalu clone dengan alamat SSH:
+`git clone git@github.com:USERNAME/NAMA-REPO.git app`.
+
+## 7. Isi `.env`
+
+```bash
+cp backend/.env.example backend/.env
+openssl rand -hex 32
+openssl rand -hex 32
+nano backend/.env
+```
+
+`openssl rand -hex 32` mencetak teks acak. Pakai:
+
+- hasil pertama untuk `MYSQL_PASSWORD` **dan** `DB_PASSWORD` (harus sama),
+- hasil kedua untuk `JWT_SECRET`.
+
+Simpan dengan `Ctrl+O`, `Enter`, `Ctrl+X`. Lalu kunci file:
+
+```bash
+chmod 600 backend/.env
+```
+
+Simpan salinan isi `.env` di password manager.
+
+## 8. Jalankan
+
+```bash
+docker compose up -d --build
+```
+
+Start pertama butuh 1–3 menit: Docker membuat image backend, MySQL membuat database dan tabel,
+dan Caddy meminta sertifikat HTTPS.
+
+**Cek:**
+
+```bash
+docker compose ps
+docker compose logs caddy | grep -i "certificate obtained"
+```
+
+- Ketiga container `Up`, dan `db` berstatus `(healthy)`.
+- Log Caddy berisi `certificate obtained successfully`.
+- Buka `https://api.domainkamu.com/api/...` (salah satu route GET kamu) di browser: muncul JSON,
+  dengan ikon gembok.
+
+Aplikasi demo: buka `https://api.domainkamu.com/health/ready` (harus `{"status":"ok","database":"ok"}`),
+lalu jalankan `docker compose exec app npm run smoke -- https://api.domainkamu.com` (semua `PASS`).
+
+## 9. Jadwalkan backup database
+
+```bash
+./backup-db.sh
+crontab -e
+```
+
+Pilih `nano` jika ditanya. Tambahkan baris ini di paling bawah, lalu simpan:
+
+```text
+0 2 * * * /var/www/app/backup-db.sh >> /var/www/app/backups/backup.log 2>&1
+```
+
+Backup berjalan setiap hari jam 02.00. 14 backup terakhir disimpan di `backups/`.
+
+**Cek:** `ls -lh backups/` menampilkan satu file `db-....sql.gz`.
+
+Backend siap. Lanjut ke [3. Deploy frontend ke Vercel](3-deploy-frontend-vercel.md).
+Untuk deploy ulang, restore backup, dan perawatan: [4. Setelah deploy](4-setelah-deploy.md).
+
+## Belum punya domain? (hanya untuk latihan)
+
+Di `Caddyfile`, ganti baris `api.domainkamu.com {` dengan `:80 {`. Backend bisa dibuka di
+`http://IP_VPS`. **Jangan pakai untuk aplikasi sungguhan:** tanpa HTTPS, password dan token
+login bisa dibaca orang lain di jaringan. Pakai data palsu.
+
+## Troubleshooting
+
+Mulai dari `docker compose ps` dan `docker compose logs app`.
+
+| Gejala | Perbaiki |
+| --- | --- |
+| `app` terus `Restarting`, log `Cannot find module` | Nama file di baris `CMD` pada `Dockerfile` salah. |
+| Log `ECONNREFUSED 127.0.0.1:3306` | Isi `DB_HOST=db` di `.env`, dan pastikan kode membaca `process.env.DB_HOST`. |
+| Log `Access denied for user` | Samakan `DB_PASSWORD` dan `MYSQL_PASSWORD`. Password MySQL hanya dibaca saat start pertama: jika diubah setelahnya, kembalikan nilai lama. |
+| Log `Table '...' doesn't exist` | Cek path file SQL di `docker-compose.yml`. Jika data boleh hilang: `docker compose down -v`, lalu `up -d` lagi. |
+| `npm ci` gagal saat build | `package-lock.json` tidak ada atau tidak cocok. Di laptop: `npm install`, commit, push. Di VPS: `git pull`. |
+| Log Caddy: `NXDOMAIN`, `timeout`, atau error sertifikat | `nslookup api.domainkamu.com` harus menampilkan IP VPS, dan `sudo ufw status` memuat 80 dan 443. Lalu `docker compose restart caddy`. |
+| Browser: **502 Bad Gateway** | `app` mati, atau port di `Caddyfile` berbeda dengan `PORT` di `.env`. |
+| `permission denied ... docker.sock` | Keluar (`exit`), lalu login lagi. |
+| Tidak bisa login SSH | Masuk lewat console/VNC di panel VPS Rumah Web (jika tersedia) atau hubungi support, lalu perbaiki `~/.ssh/authorized_keys`. |
+| Demo: log `JWT_SECRET ...` | Isi `JWT_SECRET` dengan teks acak (langkah 7), lalu `docker compose up -d`. |
