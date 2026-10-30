@@ -74,10 +74,10 @@ Setelah membeli:
 - Pasang pengingat di kalender sebulan sebelum domain kedaluwarsa. Domain yang terlambat
   diperpanjang membuat website mati, dan menebusnya mahal.
 
-## 4. Buka DNS Management
+## 4. Buka Manajemen DNS
 
 1. Login ke **Clientzone** Rumah Web.
-2. **Domain** → **Kelola** pada domain kamu → **DNS Management**.
+2. **Domain** → **Kelola** pada domain kamu → **Manajemen DNS**.
 3. Jika muncul tombol **Daftar**, **Aktifkan**, atau **Ubah Nameserver**, klik sampai tidak ada
    lagi tombol update.
 
@@ -109,7 +109,7 @@ Lanjut ke [2. Deploy backend ke VPS](2-deploy-backend-vps.md).
 
 | Gejala | Perbaiki |
 | --- | --- |
-| `nslookup`: `can't find` atau `NXDOMAIN` | Cek record di DNS Management. Tunggu, lalu coba lagi. |
+| `nslookup`: `can't find` atau `NXDOMAIN` | Cek record di Manajemen DNS. Tunggu, lalu coba lagi. |
 | `nslookup` menampilkan IP lain | Hapus record lama untuk `api`. Cek IP yang diketik. |
 | Record tidak berpengaruh | Domain memakai nameserver lain (misalnya Cloudflare). Tambahkan record di panel DNS penyedia itu. |
 | Domain tidak aktif setelah beberapa hari | Klik link di email verifikasi pemilik (cek folder spam). |

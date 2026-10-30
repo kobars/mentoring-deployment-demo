@@ -62,7 +62,7 @@ Ganti `api.domainkamu.com` dengan subdomain API kamu. Commit dan push.
 3. Vercel menampilkan record DNS: **A** untuk `domainkamu.com` dan **CNAME** untuk `www`.
    Pakai nilai yang ditampilkan untuk project kamu.
 
-**Di Rumah Web** (Clientzone → **Domain** → **Kelola** → **DNS Management**):
+**Di Rumah Web** (Clientzone → **Domain** → **Kelola** → **Manajemen DNS**):
 
 1. Hapus record A atau CNAME lama untuk domain utama dan `www`, jika ada. Jangan hapus `api`.
 2. Klik **Tambah Record Baru** dua kali, lalu isi:
