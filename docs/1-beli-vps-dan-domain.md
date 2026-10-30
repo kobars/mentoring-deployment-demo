@@ -83,14 +83,16 @@ Setelah membeli:
 
 ## 5. Arahkan `api` ke IP VPS
 
-Klik **Add New Record**, lalu isi:
+Klik **Tambah Record Baru**, lalu isi:
 
 | Kolom | Isi |
 | --- | --- |
-| Nama / Host | `api` |
-| Type | `A` |
-| Record / Value | IP VPS dari langkah 1, misalnya `103.150.10.20` |
+| Domain | `api` |
 | TTL | Biarkan default |
+| Tipe Record | `A` |
+| IP atau Hostname | IP VPS dari langkah 1, misalnya `103.150.10.20` |
+
+Klik **Tambah Record**.
 
 **Cek** dari terminal laptop (biasanya beberapa menit, paling lama sekitar 24 jam):
 

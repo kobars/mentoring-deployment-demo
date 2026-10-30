@@ -65,9 +65,9 @@ Ganti `api.domainkamu.com` dengan subdomain API kamu. Commit dan push.
 **Di Rumah Web** (Clientzone → **Domain** → **Kelola** → **DNS Management**):
 
 1. Hapus record A atau CNAME lama untuk domain utama dan `www`, jika ada. Jangan hapus `api`.
-2. **Add New Record** dua kali:
+2. Klik **Tambah Record Baru** dua kali, lalu isi:
 
-   | Nama / Host | Type | Record / Value |
+   | Domain | Tipe Record | IP atau Hostname |
    | --- | --- | --- |
    | kosongkan (domain utama) | `A` | nilai A dari Vercel |
    | `www` | `CNAME` | nilai CNAME dari Vercel |
