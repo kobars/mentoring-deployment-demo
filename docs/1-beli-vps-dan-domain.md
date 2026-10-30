@@ -35,7 +35,14 @@ Harga di Rumah Web, Oktober 2026 (cek lagi sebelum membeli):
 2. Pilih paket **M** atau lebih besar. Saat diminta memilih OS, pilih **Ubuntu 24.04**.
 3. Login atau buat akun Rumah Web, lalu bayar.
 
-**Cek:** kamu menerima email aktivasi berisi **IP VPS** dan **password root**. Simpan email ini.
+Setelah VPS aktif, ambil data login VPS:
+
+1. Login ke **Clientzone** Rumah Web.
+2. **VPS** → **Manage** pada VPS kamu.
+3. Buka bagian **Account Information**. Jika belum terlihat, klik **Manage VPS** dulu.
+
+**Cek:** kamu sudah mencatat **IP VPS** dan **password root**. Username-nya `root`. Jangan bagikan
+password ini.
 
 ## 2. Pilih domain
 
@@ -80,7 +87,7 @@ Klik **Add New Record**, lalu isi:
 | --- | --- |
 | Nama / Host | `api` |
 | Type | `A` |
-| Record / Value | IP VPS dari email aktivasi, misalnya `103.150.10.20` |
+| Record / Value | IP VPS dari langkah 1, misalnya `103.150.10.20` |
 | TTL | Biarkan default |
 
 **Cek** dari terminal laptop (biasanya beberapa menit, paling lama sekitar 24 jam):

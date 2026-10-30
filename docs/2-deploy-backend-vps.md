@@ -16,7 +16,8 @@ Internet ──► caddy (HTTPS, port 80/443) ──► app (Express, port 3000)
 **Yang dibutuhkan:**
 
 - VPS sudah aktif, dan record `api.domainkamu.com` sudah mengarah ke IP VPS
-  ([panduan 1](1-beli-vps-dan-domain.md)). IP dan password root ada di email aktivasi.
+  ([panduan 1](1-beli-vps-dan-domain.md)). IP dan password root ada di Clientzone
+  (panduan 1, langkah 1).
 - Repo GitHub berisi backend (dan [panduan 0](0-siapkan-aplikasi.md) sudah selesai, jika
   memakai aplikasimu sendiri).
 
