@@ -1,7 +1,8 @@
 # 4. Setelah deploy
 
 Tugas setelah aplikasi online. Semua perintah `docker compose` dijalankan di **terminal VPS**:
-login dengan `ssh deploy@IP_VPS`, lalu masuk ke folder `/var/www/app` (`cd /var/www/app`).
+login dengan `ssh -i ~/.ssh/NAMA_KEY deploy@IP_VPS` (`NAMA_KEY` dari panduan 2, langkah 3), lalu
+masuk ke folder `/var/www/app` (`cd /var/www/app`).
 
 ## Deploy versi baru
 
@@ -39,7 +40,7 @@ Preview memakai backend production yang sama. Hati-hati saat mencoba fitur yang 
 **Simpan salinan di luar VPS**, seminggu sekali. Backup di VPS hilang jika VPS rusak. Di **terminal laptop**, bukan terminal VPS:
 
 ```bash
-scp deploy@IP_VPS:/var/www/app/backups/db-2026-10-30-0200.sql.gz .
+scp -i ~/.ssh/NAMA_KEY deploy@IP_VPS:/var/www/app/backups/db-2026-10-30-0200.sql.gz .
 ```
 
 **Restore.** Isi tabel diganti dengan isi backup:

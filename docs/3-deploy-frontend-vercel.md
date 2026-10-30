@@ -76,7 +76,8 @@ Ganti `api.domainkamu.com` dengan subdomain API kamu. Commit dan push.
 (beberapa menit sampai sekitar 24 jam). Lalu ulangi pengecekan langkah 2 di
 `https://domainkamu.com`. `https://www.domainkamu.com` harus pindah ke `https://domainkamu.com`.
 
-Aplikasi demo: login dengan `ssh deploy@IP_VPS`, masuk ke folder `/var/www/app`, lalu jalankan
+Aplikasi demo: login dengan `ssh -i ~/.ssh/NAMA_KEY deploy@IP_VPS` (`NAMA_KEY` dari panduan 2,
+langkah 3), masuk ke folder `/var/www/app`, lalu jalankan
 `docker compose exec app npm run smoke -- https://domainkamu.com` (semua `PASS`).
 
 Selesai. Untuk deploy ulang dan perawatan: [4. Setelah deploy](4-setelah-deploy.md).

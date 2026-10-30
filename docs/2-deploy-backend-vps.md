@@ -21,7 +21,8 @@ Internet ──► caddy (HTTPS, port 80/443) ──► app (Express, port 3000)
 - Repo GitHub berisi backend (dan [panduan 0](0-siapkan-aplikasi.md) sudah selesai, jika
   memakai aplikasimu sendiri).
 
-Ganti `IP_VPS` dan `domainkamu.com` di semua perintah dengan milikmu.
+Ganti `IP_VPS`, `NAMA_KEY`, dan `domainkamu.com` di semua perintah dengan milikmu. `NAMA_KEY`
+dijelaskan di langkah 3.
 
 **Perhatikan di mana perintah berjalan.** Kamu selalu mengetik di terminal laptop. Yang berubah
 adalah tempat perintah itu berjalan:
@@ -65,49 +66,64 @@ usermod -aG sudo deploy
 **SSH key** adalah pasangan kunci. Kunci privat tetap di laptop, kunci publik disimpan di VPS.
 Key tidak bisa ditebak seperti password.
 
+Buat **key baru khusus untuk proyek ini**, walaupun kamu sudah punya key lain. Key yang sudah ada
+di laptopmu (misalnya untuk GitHub) tidak berubah, jadi semua yang sudah berjalan tetap berjalan.
+
+Pilih nama untuk key ini: huruf kecil, tanpa spasi, misalnya `tokokamu-vps`. Panduan ini
+menulisnya `NAMA_KEY`. Ganti `NAMA_KEY` di semua perintah, dan catat namanya. Kamu memakainya
+setiap kali login.
+
 Ketik `exit` untuk keluar dari VPS. Baris terminal kembali seperti biasa. Semua perintah di bawah
 dijalankan di **terminal laptop**, sampai pengecekan berhasil.
 
-**Cek apakah kamu sudah punya key:**
+**Buat key:**
 
 ```bash
-ls ~/.ssh/id_ed25519.pub
+ssh-keygen -t ed25519 -f ~/.ssh/NAMA_KEY
 ```
 
-| Hasil | Lakukan |
-| --- | --- |
-| Muncul nama file | Kamu sudah punya key. Lewati pembuatan key. |
-| `No such file or directory` (atau error di Windows) | Buat key baru. |
+Di Windows (PowerShell):
 
-**Buat key baru:**
-
-```bash
-ssh-keygen -t ed25519
+```powershell
+ssh-keygen -t ed25519 -f $env:USERPROFILE\.ssh\NAMA_KEY
 ```
+
+`-t ed25519` adalah jenis key. `-f` adalah lokasi dan nama file key.
 
 | Pertanyaan | Jawaban |
 | --- | --- |
-| `Enter file in which to save the key` | Tekan `Enter`. |
-| `Overwrite (y/n)?` | Ketik `n`. Kamu sudah punya key. Jangan menimpanya, karena login lain yang memakai key itu bisa gagal. |
+| `Overwrite (y/n)?` | Ketik `n`, lalu ulangi dengan nama lain. Nama itu sudah dipakai key lain. Jangan menimpanya, karena login yang memakai key itu bisa gagal. |
 | `Enter passphrase` | Buat passphrase (password untuk key ini) dan catat. Untuk melewatinya, tekan `Enter`. |
 | `Enter same passphrase again` | Ketik passphrase yang sama, atau tekan `Enter` jika tadi dilewati. |
+
+**Cek:** ada dua file baru di folder `.ssh`. `NAMA_KEY` adalah kunci privat: jangan dibagikan.
+`NAMA_KEY.pub` adalah kunci publik: file ini yang dikirim ke VPS.
 
 **Kirim kunci publik ke VPS:**
 
 ```bash
-ssh-copy-id deploy@IP_VPS
+ssh-copy-id -i ~/.ssh/NAMA_KEY.pub deploy@IP_VPS
 ```
-
-Masukkan password user `deploy` dari langkah 2.
 
 Di Windows (PowerShell), ganti `ssh-copy-id` dengan:
 
 ```powershell
-type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh deploy@IP_VPS "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+type $env:USERPROFILE\.ssh\NAMA_KEY.pub | ssh deploy@IP_VPS "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
 ```
 
-**Cek:** jalankan `ssh deploy@IP_VPS`. Kamu masuk tanpa diminta password user `deploy`. Jika kamu
-membuat passphrase, yang diminta adalah passphrase itu. Baris terminal diawali `deploy@`.
+Masukkan password user `deploy` dari langkah 2.
+
+**Login dengan key:**
+
+```bash
+ssh -i ~/.ssh/NAMA_KEY deploy@IP_VPS
+```
+
+`-i` memberi tahu `ssh` key mana yang dipakai. Key ini punya nama sendiri, jadi `ssh` tidak
+menemukannya tanpa `-i`. **Mulai sekarang, selalu login dengan perintah ini.**
+
+**Cek:** kamu masuk tanpa diminta password user `deploy`. Jika kamu membuat passphrase, yang
+diminta adalah passphrase itu. Baris terminal diawali `deploy@`.
 
 Sekarang matikan login root dan login password. Jalankan ini di **terminal VPS** yang baru saja
 login sebagai `deploy`, dan **jangan tutup** terminal itu sampai pengecekan di bawah berhasil:
@@ -122,8 +138,8 @@ sudo sshd -t && sudo systemctl restart ssh
 sudo sshd -T | grep -Ei '^(permitrootlogin|passwordauthentication)'
 ```
 
-**Cek:** hasilnya `permitrootlogin no` dan `passwordauthentication no`. Lalu buka terminal baru di laptop:
-`ssh deploy@IP_VPS` masih bisa masuk.
+**Cek:** hasilnya `permitrootlogin no` dan `passwordauthentication no`. Lalu buka terminal baru di
+laptop: `ssh -i ~/.ssh/NAMA_KEY deploy@IP_VPS` masih bisa masuk.
 
 ## 4. Firewall, update otomatis, dan swap
 
@@ -163,8 +179,8 @@ sudo usermod -aG docker deploy
 exit
 ```
 
-`exit` membawamu kembali ke terminal laptop. Login lagi dengan `ssh deploy@IP_VPS`, lalu jalankan
-di **terminal VPS**:
+`exit` membawamu kembali ke terminal laptop. Login lagi dengan
+`ssh -i ~/.ssh/NAMA_KEY deploy@IP_VPS`, lalu jalankan di **terminal VPS**:
 
 ```bash
 docker run --rm hello-world
@@ -282,5 +298,6 @@ Mulai dari `docker compose ps` dan `docker compose logs app`.
 | Log Caddy: `NXDOMAIN`, `timeout`, atau error sertifikat | `nslookup api.domainkamu.com` harus menampilkan IP VPS, dan `sudo ufw status` memuat 80 dan 443. Lalu `docker compose restart caddy`. |
 | Browser: **502 Bad Gateway** | `app` mati, atau port di `Caddyfile` berbeda dengan `PORT` di `.env`. |
 | `permission denied ... docker.sock` | Keluar (`exit`), lalu login lagi. |
-| Tidak bisa login SSH | Masuk lewat console/VNC di panel VPS Rumah Web (jika tersedia) atau hubungi support, lalu perbaiki `~/.ssh/authorized_keys`. |
+| `Permission denied (publickey)` saat login | Kamu lupa `-i ~/.ssh/NAMA_KEY`, atau nama key salah. Daftar key ada di `ls ~/.ssh`. |
+| Tidak bisa login SSH, walaupun key sudah benar | Masuk lewat console/VNC di panel VPS Rumah Web (jika tersedia) atau hubungi support, lalu perbaiki `~/.ssh/authorized_keys`. |
 | Demo: log `JWT_SECRET ...` | Isi `JWT_SECRET` dengan teks acak (langkah 7), lalu `docker compose up -d`. |
