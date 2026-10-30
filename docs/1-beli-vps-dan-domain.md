@@ -32,8 +32,10 @@ Harga di Rumah Web, Oktober 2026 (cek lagi sebelum membeli):
 | **M** | **2 GB** | **Rp 120.000** | **Disarankan.** |
 
 1. Buka https://www.rumahweb.com/vps-murah/.
-2. Pilih paket **M** atau lebih besar. Saat diminta memilih OS, pilih **Ubuntu 24.04**.
-3. Login atau buat akun Rumah Web, lalu bayar.
+2. Isi **Hostname** dengan nama server: `vps.` + domain yang ingin kamu beli, misalnya
+   `vps.tokokamu.com`. Ini hanya nama VPS, jadi domainnya belum perlu dibeli.
+3. Pilih paket **M** atau lebih besar. Saat diminta memilih OS, pilih **Ubuntu 24.04**.
+4. Login atau buat akun Rumah Web, lalu bayar.
 
 Setelah VPS aktif, ambil data login VPS:
 
