@@ -1,0 +1,27 @@
+# Caddy: menerima request dari internet, lalu meneruskannya ke container backend ("app").
+# Caddy otomatis membuat dan memperpanjang sertifikat HTTPS gratis dari Let's Encrypt,
+# dan mengalihkan http:// ke https://.
+
+# Pengaturan yang dipakai oleh setiap alamat di bawah.
+(backend) {
+	# SESUAIKAN: 3000 harus sama dengan PORT backend kamu.
+	reverse_proxy app:3000
+
+	encode gzip
+
+	# Tolak body request yang terlalu besar.
+	request_body {
+		max_size 1MB
+	}
+}
+
+# SESUAIKAN: subdomain API kamu. A record-nya harus sudah mengarah ke IP VPS.
+# Belum punya domain (hanya untuk latihan)? Ganti baris ini dengan  :80 {
+api.domainkamu.com {
+	import backend
+}
+
+# Untuk mencoba di laptop: http://localhost
+http://localhost {
+	import backend
+}

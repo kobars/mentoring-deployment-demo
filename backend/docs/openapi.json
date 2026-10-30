@@ -1,0 +1,1319 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Product API — Mentoring Deploy Demo",
+    "version": "1.0.0",
+    "description": "Demo deploy ke Vercel dan VPS: Express + MySQL + JWT. Register → login → salin data.token ke Authorize (token saja, tanpa prefix Bearer) → CRUD. Semua endpoint produk membutuhkan JWT; produk dibagikan antar akun, tanpa ownership per user. Auth mengembalikan success + data, produk mengembalikan data, dan error mengembalikan success:false + message + errors. DELETE 204 tidak memiliki body. Spesifikasi ini mengikuti implementasi; bukan generator route."
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "Server API yang sama dengan Swagger UI"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Registrasi dan login tanpa Bearer token."
+    },
+    {
+      "name": "Products",
+      "description": "CRUD dan pencarian produk dengan Bearer JWT."
+    },
+    {
+      "name": "System",
+      "description": "Pemeriksaan server. /health hanya memeriksa proses; /health/ready juga memeriksa database."
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "health",
+        "summary": "Cek server",
+        "description": "Tidak membutuhkan autentikasi. Status ok menunjukkan proses HTTP berjalan, bukan kesehatan database.",
+        "tags": [
+          "System"
+        ],
+        "responses": {
+          "200": {
+            "description": "Server berjalan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "servers": [
+          {
+            "url": "/"
+          }
+        ]
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "operationId": "register",
+        "summary": "Daftar akun",
+        "description": "Password di-hash dengan bcrypt dan tidak dikembalikan. Email harus unik. Registrasi tidak menerbitkan token; lanjutkan ke login.",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "201": {
+            "description": "Akun dibuat.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterResponse"
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "user": {
+                      "id": 1,
+                      "name": "Budi",
+                      "email": "budi@mail.com"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body, parameter, atau ID tidak valid; JSON rusak juga menghasilkan 400.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Validasi gagal.",
+                  "errors": [
+                    {
+                      "field": "email",
+                      "message": "Format email tidak valid."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email sudah terdaftar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Email sudah digunakan.",
+                  "errors": [
+                    {
+                      "field": "email",
+                      "message": "Gunakan email lain atau login."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body JSON melebihi batas 100kb.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Body request terlalu besar.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "description": "Kesalahan tidak terduga, misalnya database tidak tersedia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Terjadi kesalahan pada server.",
+                  "errors": []
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterInput"
+              },
+              "example": {
+                "name": "Budi",
+                "email": "budi@mail.com",
+                "password": "rahasia123"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "login",
+        "summary": "Login dan ambil JWT",
+        "description": "Simpan data.token sebagai environment token di Postman. Credential salah yang lolos validasi menghasilkan 401. Tidak ada cookie sesi.",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Login berhasil.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "token": "<JWT hasil login>",
+                    "tokenType": "Bearer",
+                    "user": {
+                      "id": 1,
+                      "name": "Budi",
+                      "email": "budi@mail.com"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body, parameter, atau ID tidak valid; JSON rusak juga menghasilkan 400.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Validasi gagal.",
+                  "errors": [
+                    {
+                      "field": "password",
+                      "message": "Password minimal 8 karakter."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Email tidak terdaftar atau password salah.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Email atau password salah.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body JSON melebihi batas 100kb.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Body request terlalu besar.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "description": "Kesalahan tidak terduga, misalnya database tidak tersedia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Terjadi kesalahan pada server.",
+                  "errors": []
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginInput"
+              },
+              "example": {
+                "email": "budi@mail.com",
+                "password": "rahasia123"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products": {
+      "get": {
+        "operationId": "listProducts",
+        "summary": "Daftar / cari produk",
+        "description": "Response adalah object dengan array pada data, diurutkan berdasarkan id. Query name memakai SQL LIKE; % dan _ berfungsi sebagai wildcard. Tidak ada pagination. Pencarian tanpa hasil mengembalikan 200 dan data: [].",
+        "tags": [
+          "Products"
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar produk.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductListResponse"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": 1,
+                      "name": "Keyboard",
+                      "price": 350000,
+                      "description": "Mechanical keyboard"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body, parameter, atau ID tidak valid; JSON rusak juga menghasilkan 400.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Validasi gagal.",
+                  "errors": [
+                    {
+                      "field": "name",
+                      "message": "Query name wajib berupa teks tunggal."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer token tidak ada, rusak, atau kedaluwarsa.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Silakan login dengan token yang valid.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Kesalahan tidak terduga, misalnya database tidak tersedia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Terjadi kesalahan pada server.",
+                  "errors": []
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "description": "Satu string pencarian; kosong berarti semua produk. Query name berulang ditolak 400.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Keyboard"
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createProduct",
+        "summary": "Buat produk",
+        "description": "Kirim raw JSON dengan Content-Type: application/json. Simpan data.id untuk langkah read/update/delete. Field tambahan diabaikan; name, price, dan description wajib dikirim.",
+        "tags": [
+          "Products"
+        ],
+        "responses": {
+          "201": {
+            "description": "Produk dibuat.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                },
+                "example": {
+                  "data": {
+                    "id": 1,
+                    "name": "Keyboard",
+                    "price": 350000,
+                    "description": "Mechanical keyboard"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body, parameter, atau ID tidak valid; JSON rusak juga menghasilkan 400.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Validasi gagal.",
+                  "errors": [
+                    {
+                      "field": "price",
+                      "message": "Harga minimal 0."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer token tidak ada, rusak, atau kedaluwarsa.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Silakan login dengan token yang valid.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body JSON melebihi batas 100kb.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Body request terlalu besar.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Kesalahan tidak terduga, misalnya database tidak tersedia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Terjadi kesalahan pada server.",
+                  "errors": []
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductInput"
+              },
+              "example": {
+                "name": "Keyboard",
+                "price": 350000,
+                "description": "Mechanical keyboard"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Integer positif aman untuk JavaScript. abc, 0, -1, 1.5, dan angka melebihi batas safe integer menghasilkan 400.",
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "example": 1
+        }
+      ],
+      "get": {
+        "operationId": "getProduct",
+        "summary": "Detail produk",
+        "description": "Gunakan data.id yang didapat dari create. Setelah delete berhasil, endpoint ini menghasilkan 404 untuk ID tersebut.",
+        "tags": [
+          "Products"
+        ],
+        "responses": {
+          "200": {
+            "description": "Produk ditemukan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                },
+                "example": {
+                  "data": {
+                    "id": 1,
+                    "name": "Keyboard",
+                    "price": 350000,
+                    "description": "Mechanical keyboard"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body, parameter, atau ID tidak valid; JSON rusak juga menghasilkan 400.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Validasi gagal.",
+                  "errors": [
+                    {
+                      "field": "id",
+                      "message": "ID harus berupa bilangan bulat positif."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer token tidak ada, rusak, atau kedaluwarsa.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Silakan login dengan token yang valid.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ID valid tetapi produk tidak ditemukan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Produk tidak ditemukan.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Kesalahan tidak terduga, misalnya database tidak tersedia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Terjadi kesalahan pada server.",
+                  "errors": []
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "replaceProduct",
+        "summary": "Ganti seluruh field produk",
+        "description": "Wajib mengirim name, price, dan description. ID tetap. Nilai yang sama tetap menghasilkan 200 jika produk ada. Field tambahan diabaikan.",
+        "tags": [
+          "Products"
+        ],
+        "responses": {
+          "200": {
+            "description": "Produk diperbarui.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                },
+                "example": {
+                  "data": {
+                    "id": 1,
+                    "name": "Keyboard Pro",
+                    "price": 400000,
+                    "description": "Updated keyboard"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body, parameter, atau ID tidak valid; JSON rusak juga menghasilkan 400.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Validasi gagal.",
+                  "errors": [
+                    {
+                      "field": "price",
+                      "message": "Harga minimal 0."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer token tidak ada, rusak, atau kedaluwarsa.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Silakan login dengan token yang valid.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ID valid tetapi produk tidak ditemukan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Produk tidak ditemukan.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body JSON melebihi batas 100kb.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Body request terlalu besar.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Kesalahan tidak terduga, misalnya database tidak tersedia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Terjadi kesalahan pada server.",
+                  "errors": []
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductInput"
+              },
+              "example": {
+                "name": "Keyboard Pro",
+                "price": 400000,
+                "description": "Updated keyboard"
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchProductPrice",
+        "summary": "Ubah harga saja",
+        "description": "Hanya price yang diterima. Field lain (termasuk name) menghasilkan 400. Name dan description tetap. Harga 0 valid.",
+        "tags": [
+          "Products"
+        ],
+        "responses": {
+          "200": {
+            "description": "Harga diperbarui.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                },
+                "example": {
+                  "data": {
+                    "id": 1,
+                    "name": "Keyboard",
+                    "price": 375000,
+                    "description": "Mechanical keyboard"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body, parameter, atau ID tidak valid; JSON rusak juga menghasilkan 400.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Validasi gagal.",
+                  "errors": [
+                    {
+                      "field": "price",
+                      "message": "Harga minimal 0."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer token tidak ada, rusak, atau kedaluwarsa.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Silakan login dengan token yang valid.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ID valid tetapi produk tidak ditemukan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Produk tidak ditemukan.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body JSON melebihi batas 100kb.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Body request terlalu besar.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Kesalahan tidak terduga, misalnya database tidak tersedia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Terjadi kesalahan pada server.",
+                  "errors": []
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PricePatch"
+              },
+              "example": {
+                "price": 375000
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteProduct",
+        "summary": "Hapus produk",
+        "description": "204 tanpa body. Jangan parse JSON pada response ini. Verifikasi penghapusan dengan GET ID yang sama; penghapusan ulang menghasilkan 404.",
+        "tags": [
+          "Products"
+        ],
+        "responses": {
+          "204": {
+            "description": "Produk dihapus. Tidak ada response body."
+          },
+          "400": {
+            "description": "Body, parameter, atau ID tidak valid; JSON rusak juga menghasilkan 400.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Validasi gagal.",
+                  "errors": [
+                    {
+                      "field": "id",
+                      "message": "ID harus berupa bilangan bulat positif."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer token tidak ada, rusak, atau kedaluwarsa.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Silakan login dengan token yang valid.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ID valid tetapi produk tidak ditemukan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Produk tidak ditemukan.",
+                  "errors": []
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Kesalahan tidak terduga, misalnya database tidak tersedia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Terjadi kesalahan pada server.",
+                  "errors": []
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "healthReady",
+        "summary": "Cek server dan database",
+        "description": "Tidak membutuhkan autentikasi. Menjalankan SELECT 1 ke database. Dipakai setelah deploy untuk memastikan environment variable database sudah benar.",
+        "tags": [
+          "System"
+        ],
+        "security": [],
+        "servers": [
+          {
+            "url": "/"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server dan database siap.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "database"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "database": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "database": "ok"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database tidak dapat dihubungi.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "database"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "database": {
+                      "type": "string",
+                      "enum": [
+                        "unreachable"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "database": "unreachable"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT dari data.token pada response login. Signature dan expiry diverifikasi; sub berisi user ID. Tidak ada endpoint refresh/logout; logout client menghapus token lokal."
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "price",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "description": "Angka JSON dari DECIMAL(12,2); database menyimpan dua angka desimal."
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "ProductInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "price",
+          "description"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 100,
+            "description": "Di-trim sebelum validasi panjang."
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Harus angka JSON, bukan string. Database DECIMAL(12,2) membatasi penyimpanan; nilai di luar kapasitas database belum dinormalisasi menjadi validation error."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Wajib dikirim; string kosong diperbolehkan."
+          }
+        }
+      },
+      "PricePatch": {
+        "type": "object",
+        "required": [
+          "price"
+        ],
+        "properties": {
+          "price": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "RegisterInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 100,
+            "description": "Di-trim sebelum validasi."
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "description": "Di-trim dan diubah menjadi lowercase."
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "writeOnly": true,
+            "description": "Maksimal 72 byte UTF-8; tidak di-trim."
+          }
+        }
+      },
+      "LoginInput": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "description": "Di-trim dan diubah menjadi lowercase."
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "writeOnly": true,
+            "description": "Maksimal 72 byte UTF-8; tidak di-trim. Password terlalu pendek menghasilkan 400 sebelum pengecekan credential."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "errors"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "field",
+                "message"
+              ],
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "description": "Nama field; dapat kosong untuk validasi seluruh body."
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ProductResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Product"
+          }
+        }
+      },
+      "ProductListResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Product"
+            }
+          }
+        }
+      },
+      "RegisterResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "data"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "data": {
+            "type": "object",
+            "required": [
+              "user"
+            ],
+            "properties": {
+              "user": {
+                "$ref": "#/components/schemas/User"
+              }
+            }
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "data"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "data": {
+            "type": "object",
+            "required": [
+              "token",
+              "tokenType",
+              "user"
+            ],
+            "properties": {
+              "token": {
+                "type": "string"
+              },
+              "tokenType": {
+                "type": "string",
+                "enum": [
+                  "Bearer"
+                ]
+              },
+              "user": {
+                "$ref": "#/components/schemas/User"
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "TooManyRequests": {
+        "description": "Rate limit login/register terlampaui: 20 percobaan per 15 menit untuk setiap email.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "success": false,
+              "message": "Terlalu banyak percobaan. Coba lagi dalam 15 menit.",
+              "errors": []
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="id">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Ruang Produk — Day 47</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body>
+<header class="site-header"><a class="brand" href="/" aria-label="Ruang Produk, beranda"><span class="brand-mark" aria-hidden="true">r.</span>ruang<span class="brand-light">produk</span></a><span class="lesson-tag"><span class="dot"></span> FWD 12 / Day 47</span></header>
+<main>
+  <section class="intro"><div><p class="eyebrow">KOLEKSI KELAS</p><h1>Produk tertata.<br><span>Ide terus tumbuh.</span></h1><p class="intro-copy">Satu ruang untuk menambah, mencari, dan merawat koleksi produkmu.</p></div><div class="intro-art" aria-hidden="true"><span class="orbit orbit-one"></span><span class="orbit orbit-two"></span><span class="art-card">r.<small>RUANG UNTUK IDE</small></span><span class="art-spark">✦</span></div></section>
+  <section class="session-panel" aria-label="Sesi akun">
+    <div><strong>Akses koleksi</strong><p id="session-status" role="status">Masuk untuk membuka dan mengelola koleksi.</p></div>
+    <div class="session-actions"><button class="button secondary" id="open-login" type="button">Masuk</button><button class="button primary" id="open-register" type="button">Daftar</button><button class="button subtle" id="logout" type="button" hidden>Keluar</button></div>
+  </section><div class="workspace">
+    <aside class="create-panel"><div class="panel-heading"><span class="section-icon" aria-hidden="true">+</span><div><p class="eyebrow">MULAI DARI SINI</p><h2>Tambah produk</h2></div></div><p class="muted">Catat produk baru untuk koleksimu.</p>
+      <form id="product-form" class="stack-form" novalidate>
+        <label>Nama produk<input name="name" placeholder="Contoh: Buku catatan" required maxlength="100" autocomplete="off"></label>
+        <label>Harga <span class="optional">(Rp)</span><input name="price" type="number" min="0" step="1" placeholder="25000" required></label>
+        <label>Deskripsi <span class="optional">(boleh kosong)</span><textarea name="description" rows="3" placeholder="Apa yang membuat produk ini menarik?"></textarea></label>
+        <button class="button primary" type="submit">Tambah ke koleksi <span aria-hidden="true">↗</span></button>
+      </form>
+      <div class="panel-note"><span aria-hidden="true">↳</span><p>Produk tersimpan di database lokal. Koleksimu tetap ada saat server dijalankan kembali.</p></div>
+    </aside>
+    <section class="collection" aria-labelledby="collection-title"><div class="collection-heading"><div><p class="eyebrow">SEMUA DALAM SATU TEMPAT</p><h2 id="collection-title">Koleksi produk <span id="product-count" class="count">0</span></h2></div></div>
+      <div class="search-bar"><label class="search-label" for="search-name"><span aria-hidden="true">⌕</span><input id="search-name" type="search" placeholder="Cari nama produk…" autocomplete="off"><span class="sr-only">Cari nama produk</span></label><button id="load-products" class="button secondary" type="button">Cari</button></div>
+      <p id="status" class="status" role="status" aria-live="polite">Memuat koleksi…</p>
+      <div id="product-list" class="product-grid"></div>
+    </section>
+  </div>
+</main>
+<footer>Dibuat sedikit demi sedikit. <span>Satu produk, satu ide.</span></footer>
+<template id="product-card"><article class="product-card"><div class="card-top"><span class="product-symbol" aria-hidden="true">✦</span><span class="product-id"></span></div><h3 class="product-name"></h3><p class="product-description"></p><p class="product-price"></p><div class="card-actions"><button class="button small secondary edit-button" type="button">Edit produk</button><button class="button small subtle price-button" type="button">Harga</button><button class="button small danger-text delete-button" type="button">Hapus</button></div></article></template>
+<dialog id="edit-dialog" aria-labelledby="edit-title"><form id="edit-form" class="stack-form" novalidate><div class="dialog-heading"><div><p class="eyebrow">PERBARUI KOLEKSI</p><h2 id="edit-title">Edit produk</h2></div><button class="icon-button" data-close type="button" aria-label="Tutup dialog edit">×</button></div><p class="muted">Simpan nama, harga, dan deskripsi produk.</p><input name="id" type="hidden"><label>Nama produk<input name="name" required maxlength="100" autocomplete="off"></label><label>Harga (Rp)<input name="price" type="number" min="0" step="1" required></label><label>Deskripsi<textarea name="description" rows="3"></textarea></label><div class="dialog-actions"><button class="button secondary" data-close type="button">Batal</button><button class="button primary" type="submit">Simpan perubahan</button></div></form></dialog>
+<dialog id="price-dialog" aria-labelledby="price-title"><form id="price-form" class="stack-form" novalidate><div class="dialog-heading"><div><p class="eyebrow">PERUBAHAN KECIL</p><h2 id="price-title">Ubah harga</h2></div><button class="icon-button" data-close type="button" aria-label="Tutup dialog harga">×</button></div><p class="muted">Ubah harga <strong id="price-product-name"></strong>. Nama dan deskripsinya tetap.</p><input name="id" type="hidden"><label>Harga baru (Rp)<input name="price" type="number" min="0" step="1" required></label><div class="dialog-actions"><button class="button secondary" data-close type="button">Batal</button><button class="button primary" type="submit">Simpan harga</button></div></form></dialog>
+<dialog id="delete-dialog" aria-labelledby="delete-title"><form id="delete-form" class="stack-form" novalidate><div class="dialog-heading"><div><p class="eyebrow">RAPIKAN KOLEKSI</p><h2 id="delete-title">Hapus produk?</h2></div><button class="icon-button" data-close type="button" aria-label="Tutup dialog hapus">×</button></div><p class="muted"><strong id="delete-product-name"></strong> akan dihapus dari koleksi. Produk lain tetap tersimpan.</p><input name="id" type="hidden"><div class="dialog-actions"><button class="button secondary" data-close type="button">Batal</button><button class="button danger" type="submit">Ya, hapus produk</button></div></form></dialog>
+
+<dialog id="login-dialog" class="auth-dialog" aria-labelledby="login-title"><form id="login-form" class="stack-form" novalidate>
+<div class="dialog-heading"><div><p class="eyebrow">SELAMAT DATANG KEMBALI</p><h2 id="login-title">Masuk ke koleksi</h2></div><button class="icon-button" data-close type="button" aria-label="Tutup login">×</button></div>
+<label>Email<input name="email" type="email" autocomplete="username" maxlength="254" required></label>
+<label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+<button class="button primary" type="submit">Masuk</button>
+</form></dialog>
+<dialog id="register-dialog" class="auth-dialog" aria-labelledby="register-title"><form id="register-form" class="stack-form" novalidate>
+<div class="dialog-heading"><div><p class="eyebrow">RUANG UNTUK IDEMU</p><h2 id="register-title">Buat akun</h2></div><button class="icon-button" data-close type="button" aria-label="Tutup register">×</button></div>
+<label>Nama<input name="name" autocomplete="name" maxlength="100" required></label>
+<label>Email<input name="email" type="email" autocomplete="username" maxlength="254" required></label>
+<label>Password<input name="password" type="password" autocomplete="new-password" required><small class="muted">Minimal 8 karakter, maksimal 72 byte UTF-8.</small></label>
+<button class="button primary" type="submit">Buat akun</button>
+</form></dialog>
+</body></html>

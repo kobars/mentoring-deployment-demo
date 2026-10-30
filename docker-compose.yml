@@ -1,0 +1,69 @@
+# Menjalankan backend Express, MySQL, dan Caddy (HTTPS) di VPS dengan satu perintah:
+#   docker compose up -d --build
+# Hanya Caddy yang dibuka ke internet (port 80 dan 443). MySQL dan backend hanya bisa diakses
+# dari jaringan Docker.
+# Untuk app kamu sendiri: cek baris bertanda SESUAIKAN.
+
+# Batas ukuran log setiap container (3 file x 10 MB), agar disk VPS tidak penuh.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    logging: *logging
+    # Membaca MYSQL_DATABASE, MYSQL_USER, dan MYSQL_PASSWORD.
+    env_file: ./backend/.env # SESUAIKAN: folder backend kamu
+    environment:
+      # Password root dibuat acak. Aplikasi memakai user dari MYSQL_USER.
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      # Data MySQL disimpan di volume, jadi tidak hilang saat container dibuat ulang.
+      - db-data:/var/lib/mysql
+      # SESUAIKAN: file SQL pembuat tabel. Dijalankan satu kali, saat database masih kosong.
+      - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      # Lewat TCP (127.0.0.1), agar dianggap sehat hanya setelah inisialisasi pertama selesai.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  app:
+    build: ./backend # SESUAIKAN: folder backend kamu (berisi Dockerfile)
+    restart: unless-stopped
+    logging: *logging
+    # Proses kecil yang meneruskan sinyal stop ke Node.js, agar container berhenti dengan cepat.
+    init: true
+    env_file: ./backend/.env # SESUAIKAN: folder backend kamu
+    depends_on:
+      db:
+        condition: service_healthy
+    # Beri waktu untuk menyelesaikan request aktif saat container dihentikan.
+    stop_grace_period: 15s
+
+  caddy:
+    image: caddy:2.11-alpine
+    restart: unless-stopped
+    logging: *logging
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Sertifikat HTTPS disimpan di volume. Jangan dihapus.
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

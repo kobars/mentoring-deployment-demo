@@ -1,0 +1,6 @@
+# File yang tidak ikut masuk ke image Docker.
+node_modules
+.env
+.env.*
+*.log
+.git
