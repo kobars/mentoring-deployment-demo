@@ -23,19 +23,33 @@ Internet ──► caddy (HTTPS, port 80/443) ──► app (Express, port 3000)
 
 Ganti `IP_VPS` dan `domainkamu.com` di semua perintah dengan milikmu.
 
+**Perhatikan di mana perintah berjalan.** Kamu selalu mengetik di terminal laptop. Yang berubah
+adalah tempat perintah itu berjalan:
+
+| Panduan menulis | Artinya | Cara mengenalinya |
+| --- | --- | --- |
+| **Terminal laptop** | Belum login dengan `ssh`, atau sudah keluar dengan `exit`. | Baris terminal seperti biasa. |
+| **Terminal VPS** | Sudah login dengan `ssh`. Perintah berjalan di VPS, bukan di laptop. | Baris terminal diawali `root@` atau `deploy@`. |
+
 ## 1. Isi domain di `Caddyfile` (di laptop)
 
 Ganti `api.domainkamu.com` dengan subdomain API kamu. Commit dan push.
 
 ## 2. Login dan buat user `deploy`
 
-Dari terminal laptop:
+Di **terminal laptop**, login ke VPS:
 
 ```bash
 ssh root@IP_VPS
 ```
 
-Di VPS:
+- Jika muncul `Are you sure you want to continue connecting`, ketik `yes`.
+- Masukkan password root dari Clientzone. Terminal tidak menampilkan apa pun saat kamu mengetik.
+  Ini normal.
+
+**Cek:** baris terminal sekarang diawali `root@`. Terminal ini sudah menjadi **terminal VPS**.
+
+Di **terminal VPS** itu, jalankan:
 
 ```bash
 apt update && apt upgrade -y
@@ -51,12 +65,40 @@ usermod -aG sudo deploy
 **SSH key** adalah pasangan kunci. Kunci privat tetap di laptop, kunci publik disimpan di VPS.
 Key tidak bisa ditebak seperti password.
 
-Di terminal **laptop**. Lewati `ssh-keygen` jika kamu sudah punya key:
+Ketik `exit` untuk keluar dari VPS. Baris terminal kembali seperti biasa. Semua perintah di bawah
+dijalankan di **terminal laptop**, sampai pengecekan berhasil.
+
+**Cek apakah kamu sudah punya key:**
+
+```bash
+ls ~/.ssh/id_ed25519.pub
+```
+
+| Hasil | Lakukan |
+| --- | --- |
+| Muncul nama file | Kamu sudah punya key. Lewati pembuatan key. |
+| `No such file or directory` (atau error di Windows) | Buat key baru. |
+
+**Buat key baru:**
 
 ```bash
 ssh-keygen -t ed25519
+```
+
+| Pertanyaan | Jawaban |
+| --- | --- |
+| `Enter file in which to save the key` | Tekan `Enter`. |
+| `Overwrite (y/n)?` | Ketik `n`. Kamu sudah punya key. Jangan menimpanya, karena login lain yang memakai key itu bisa gagal. |
+| `Enter passphrase` | Buat passphrase (password untuk key ini) dan catat. Untuk melewatinya, tekan `Enter`. |
+| `Enter same passphrase again` | Ketik passphrase yang sama, atau tekan `Enter` jika tadi dilewati. |
+
+**Kirim kunci publik ke VPS:**
+
+```bash
 ssh-copy-id deploy@IP_VPS
 ```
+
+Masukkan password user `deploy` dari langkah 2.
 
 Di Windows (PowerShell), ganti `ssh-copy-id` dengan:
 
@@ -64,10 +106,11 @@ Di Windows (PowerShell), ganti `ssh-copy-id` dengan:
 type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh deploy@IP_VPS "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
 ```
 
-**Cek:** `ssh deploy@IP_VPS` masuk tanpa meminta password VPS.
+**Cek:** jalankan `ssh deploy@IP_VPS`. Kamu masuk tanpa diminta password user `deploy`. Jika kamu
+membuat passphrase, yang diminta adalah passphrase itu. Baris terminal diawali `deploy@`.
 
-Sekarang matikan login root dan login password. Lakukan ini dari sesi `deploy`, dan **jangan
-tutup** sesi itu sampai pengecekan di bawah berhasil:
+Sekarang matikan login root dan login password. Jalankan ini di **terminal VPS** yang baru saja
+login sebagai `deploy`, dan **jangan tutup** terminal itu sampai pengecekan di bawah berhasil:
 
 ```bash
 sudo tee /etc/ssh/sshd_config.d/00-hardening.conf > /dev/null <<'EOF'
@@ -79,10 +122,13 @@ sudo sshd -t && sudo systemctl restart ssh
 sudo sshd -T | grep -Ei '^(permitrootlogin|passwordauthentication)'
 ```
 
-**Cek:** hasilnya `permitrootlogin no` dan `passwordauthentication no`. Lalu buka terminal baru:
+**Cek:** hasilnya `permitrootlogin no` dan `passwordauthentication no`. Lalu buka terminal baru di laptop:
 `ssh deploy@IP_VPS` masih bisa masuk.
 
 ## 4. Firewall, update otomatis, dan swap
+
+Langkah 4 sampai 9 dijalankan di **terminal VPS**, sebagai `deploy`. Baris terminal diawali
+`deploy@`.
 
 ```bash
 sudo ufw allow OpenSSH
@@ -117,7 +163,8 @@ sudo usermod -aG docker deploy
 exit
 ```
 
-Login lagi (`ssh deploy@IP_VPS`), lalu:
+`exit` membawamu kembali ke terminal laptop. Login lagi dengan `ssh deploy@IP_VPS`, lalu jalankan
+di **terminal VPS**:
 
 ```bash
 docker run --rm hello-world
@@ -231,7 +278,7 @@ Mulai dari `docker compose ps` dan `docker compose logs app`.
 | Log `ECONNREFUSED 127.0.0.1:3306` | Isi `DB_HOST=db` di `.env`, dan pastikan kode membaca `process.env.DB_HOST`. |
 | Log `Access denied for user` | Samakan `DB_PASSWORD` dan `MYSQL_PASSWORD`. Password MySQL hanya dibaca saat start pertama: jika diubah setelahnya, kembalikan nilai lama. |
 | Log `Table '...' doesn't exist` | Cek path file SQL di `docker-compose.yml`. Jika data boleh hilang: `docker compose down -v`, lalu `up -d` lagi. |
-| `npm ci` gagal saat build | `package-lock.json` tidak ada atau tidak cocok. Di laptop: `npm install`, commit, push. Di VPS: `git pull`. |
+| `npm ci` gagal saat build | `package-lock.json` tidak ada atau tidak cocok. Di terminal laptop: `npm install`, commit, push. Di terminal VPS: `git pull`. |
 | Log Caddy: `NXDOMAIN`, `timeout`, atau error sertifikat | `nslookup api.domainkamu.com` harus menampilkan IP VPS, dan `sudo ufw status` memuat 80 dan 443. Lalu `docker compose restart caddy`. |
 | Browser: **502 Bad Gateway** | `app` mati, atau port di `Caddyfile` berbeda dengan `PORT` di `.env`. |
 | `permission denied ... docker.sock` | Keluar (`exit`), lalu login lagi. |

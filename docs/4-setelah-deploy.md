@@ -1,13 +1,13 @@
 # 4. Setelah deploy
 
-Tugas setelah aplikasi online. Semua perintah `docker compose` dijalankan di VPS, di folder
-`/var/www/app`.
+Tugas setelah aplikasi online. Semua perintah `docker compose` dijalankan di **terminal VPS**:
+login dengan `ssh deploy@IP_VPS`, lalu masuk ke folder `/var/www/app` (`cd /var/www/app`).
 
 ## Deploy versi baru
 
 **Frontend:** `git push` ke `main`. Vercel men-deploy ulang secara otomatis.
 
-**Backend:** setelah `git push`, jalankan di VPS:
+**Backend:** setelah `git push`, jalankan di **terminal VPS**:
 
 ```bash
 cd /var/www/app
@@ -20,7 +20,7 @@ docker image prune -f
 
 **Perubahan tabel tidak otomatis.** File SQL pembuat tabel hanya dijalankan saat database
 pertama kali dibuat. Untuk menambah tabel atau kolom, backup dulu (`./backup-db.sh`), tulis
-perubahannya di file `.sql` baru, push, `git pull` di VPS, lalu:
+perubahannya di file `.sql` baru, push, `git pull` di terminal VPS, lalu:
 
 ```bash
 docker compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" exec mysql -u"$MYSQL_USER" "$MYSQL_DATABASE"' < backend/db/perubahan.sql
@@ -36,7 +36,7 @@ Preview memakai backend production yang sama. Hati-hati saat mencoba fitur yang 
 
 `backup-db.sh` berjalan setiap hari jam 02.00 (panduan 2, langkah 9).
 
-**Simpan salinan di luar VPS**, seminggu sekali. Backup di VPS hilang jika VPS rusak. Di laptop:
+**Simpan salinan di luar VPS**, seminggu sekali. Backup di VPS hilang jika VPS rusak. Di **terminal laptop**, bukan terminal VPS:
 
 ```bash
 scp deploy@IP_VPS:/var/www/app/backups/db-2026-10-30-0200.sql.gz .
